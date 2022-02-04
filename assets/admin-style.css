@@ -1,0 +1,128 @@
+
+/* 
+    Created on : Dec 30, 2021, 10:55:27 AM
+    Author     : apon
+*/
+
+
+.option-wrap {
+    display: flex;
+}
+.option-wrap label {
+    padding: 4px 10px;
+    min-width: 140px;
+}
+.customPost-wrap {
+    display: flex;
+    flex-wrap: wrap;
+}
+.button.viewSitemap[disabled=""] {
+    pointer-events: none;
+}
+.customPost-wrap .post-type {
+    background: #fff;
+    margin-right: 10px;
+    border: 1px solid #ddd;
+    width: 20%;
+    border-radius: 4px;
+}
+.post-type-title {
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid #eaeaea;
+    padding: 8px;
+}
+.customPost-wrap {
+    padding-bottom: 15px;
+    border-bottom: 1px solid #e5e5e5;
+    margin-bottom: 15px;
+}
+.post-type-body {
+    padding: 8px;
+}
+.taxBlock {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #f0f0f0;
+    border-radius: 4px;
+}
+.taxBlock .taxItem {
+    text-transform: capitalize;
+    padding: 5px 10px;
+    border-bottom: 1px solid #f0f0f0;
+    display: flex;
+    align-items: center;
+}
+.taxBlock .taxItem input{
+    margin:0;
+}
+.taxBlock .taxItem:last-child{
+    border-bottom: 0;
+}
+.editSitemapFileName {
+    padding: 0px 5px;
+    cursor: pointer;
+    margin-left: 10px;
+}
+
+.sitemap-name-edit {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    min-width: 300px;
+    z-index: 9;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 2px;
+}
+.smn-edit-body input {
+    width: 100%;
+}
+
+.smn-edit-title-area h3 {
+    padding: 10px;
+    margin: 0;
+    text-transform: capitalize;
+    border-bottom: 1px solid #ddd;
+}
+.smn-edit-body {
+    padding: 10px;
+}
+.button .dashicons {
+    padding: 4px;
+}
+.dashicons.loading {
+    animation-name: rotate;
+    animation-duration: 2s;
+    animation-iteration-count: infinite;
+    animation-timing-function: linear;
+}
+
+/*Freq and Prio*/
+.fp-row {
+    display: flex;
+    max-width: 600px;
+}
+.fp-row .freq-wrap {
+    margin-right: 4%;
+}
+
+.freq-wrap .post-type, .prio-wrap .post-type {
+    background: #fff;
+    margin-top: 15px;
+    border: 1px solid #ddd;
+}
+.freq-item {
+    margin-bottom: 5px;
+}
+
+
+@keyframes rotate {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
