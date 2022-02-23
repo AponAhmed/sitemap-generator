@@ -64,6 +64,13 @@ class Generator {
     public int $n;
     public $tempLinks;
 
+    /**
+     * Type Basis Data map
+     * @param type $options
+     */
+    public array $typeBasisData;
+    public string $currentType;
+
     public function __construct($options) {
         $this->options = $options;
         $this->homeID = get_option('page_on_front');
@@ -119,6 +126,7 @@ class Generator {
         if (!is_dir(ABSPATH . $this->dirName)) {
             mkdir(ABSPATH . $this->dirName, 0777, true);
             chmod(ABSPATH . $this->dirName, 0777);
+            file_put_contents(ABSPATH . $this->dirName . "/index.php", "<?php //Silence is golden");
         }
         //$this->dirName = ABSPATH . $this->dirName;
     }
@@ -127,20 +135,26 @@ class Generator {
      * Main Entry Point before Generate
      */
     public function run() {
+        //echo "<pre>";
         //var_dump($this->options);
+        //return;
         //Loop Initialize for Post Typ
         if (count($this->options['post_types']) > 0) {
             foreach ($this->options['post_types'] as $postType) {
+                $this->typeBasisData = [];
                 $this->setTypes('post', $postType);
                 $this->distributePost();
+                $this->TypeBasisStore();
             }
         }
 
         //Loop Initialize for Taxonomies
         if (isset($this->options['taxonomies']) && count($this->options['taxonomies']) > 0) {
             foreach ($this->options['taxonomies'] as $taxo) {
+                $this->typeBasisData = [];
                 $this->setTypes('taxo', $taxo);
                 $this->distributeTaxo();
+                $this->TypeBasisStore();
             }
         }
         //var_dump($this);
@@ -168,6 +182,9 @@ class Generator {
         if ($id) {
             $singleQry = "and id=$id";
         }
+        $this->type = 'post';
+        $this->postType = 'repeatable';
+        $this->typeBasisData = [];
         $projects = $wpdb->get_results("SELECT name,headers,source_type,source_path,original_file_url,template_id,urls_array,sitemap_filename,sitemap_max_url,sitemap_update_frequency From {$wpdb->prefix}" . MPG_Constant::MPG_PROJECTS_TABLE . " where $singleQry exclude_in_robots !=0");
         foreach ($projects as $project) {
             $pageTitle = get_the_title($project->template_id);
@@ -193,6 +210,7 @@ class Generator {
                     //$pageTitle = $this->shortcodeFilter($project, $pageTitle, $linkSuffex);//Commented For Execution Time Issue
 
                     $link = $this->trimSlash($this->siteUrl . "/" . $linkSuffex);
+                    $this->typeBasisData[] = $link;
 
                     $this->tempData[] = array($link, $pageTitle);
 
@@ -207,6 +225,7 @@ class Generator {
                 }
             }
         }
+        $this->TypeBasisStore();
     }
 
     /**
@@ -237,9 +256,11 @@ class Generator {
         $exception = false;
         if ($this->postType == "page") {//Exception For Home Page to Top
             $this->tempData[$this->homeID] = array($this->siteUrl, get_the_title($this->homeID));
+            $this->typeBasisData[] = $this->siteUrl;
             $n = 1;
             $exception = true;
         }
+
 
         if ($wpQuery->posts) {
             if ($exception) {
@@ -248,6 +269,8 @@ class Generator {
             foreach ($wpQuery->posts as $post) {
                 $link = get_permalink($post->ID);
                 $this->tempLinks[] = $link; //All Links
+                $this->typeBasisData[] = $link;
+
                 $this->tempData[$post->ID] = array($link, $post->post_title);
                 $n++;
                 //check count 
@@ -285,6 +308,7 @@ class Generator {
                 $n++;
                 $termLink = get_term_link($term);
                 $this->tempLinks[] = $termLink; //All Links
+                $this->typeBasisData[] = $termLink;
                 $this->tempData[$term->term_id] = array($termLink, $term->name);
                 if (count($this->tempData) == $this->options['sitemap_max_links'] || $n == count($terms)) {
                     $file = $this->storeXml();
@@ -462,6 +486,54 @@ class Generator {
             }
         }
         return false;
+    }
+
+    function TypeBasisStore() {
+        //var_dump($this->postType, $this->typeBasisData);
+        //var_dump($this->typeBasisData);
+        $doc = new \DOMDocument('1.0', "UTF-8");
+        $doc->formatOutput = true;
+        $urlSet = $doc->createElement("urlset");
+        $attArr = [
+            'xmlns:xsi' => 'http://www.w3.org/2001/XMLSchema-instance',
+            'xsi:schemaLocation' => 'http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd',
+            'xmlns' => 'http://www.sitemaps.org/schemas/sitemap/0.9'
+        ];
+
+        $stylePath = $this->siteUrl . "/wp-content/plugins/sitemap-generator/assets/xml-styles/xml-sitemap-all.xsl";
+        $stylePath = preg_replace('/([^:])(\/{2,})/', '$1/', $stylePath);
+        $xslt = $doc->createProcessingInstruction('xml-stylesheet', ' type="text/xsl" href="' . $stylePath . '"');
+        $doc->appendChild($xslt);
+
+        //Creating Attributes
+        foreach ($attArr as $key => $value) {
+            $attr = $doc->createAttribute($key);
+            $attr->value = $value;
+            $urlSet->appendChild($attr);
+        }
+        //Add Attributes
+        $doc->appendChild($urlSet);
+
+        foreach ($this->typeBasisData as $link) {
+            $url = $doc->createElement("url");
+            $e = $doc->createElement('loc');
+            $e->appendChild($doc->createTextNode($link));
+            $url->appendChild($e);
+            //Final Append
+            $urlSet->appendChild($url);
+        }
+        $typeDir = ABSPATH . $this->dirName . "/type/";
+        if (!is_dir($typeDir)) {
+            mkdir($typeDir, 0777);
+            chmod($typeDir, 0777);
+            file_put_contents($typeDir . "index.php", "<?php //Silence is golden");
+        }
+        if ($this->type == 'post') {
+            $FName = $this->postType;
+        } else {
+            $FName = $this->taxType;
+        }
+        $doc->save($typeDir . "/$FName.xml");
     }
 
     function allinOneGenerate() {
