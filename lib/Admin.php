@@ -97,7 +97,9 @@ class Admin {
         }
         $taxonomies = get_option('sitemap_taxonomies');
         if ($taxonomies != "") {
-            $this->options['taxonomies'] = json_decode($taxonomies, true);
+            $taxx = json_decode($taxonomies, true);
+            $taxx = !is_array($taxx) ? array() : $taxx;
+            $this->options['taxonomies'] = array_unique($taxx);
         }
     }
 

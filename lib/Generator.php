@@ -304,12 +304,20 @@ class Generator {
 
         if (count($terms) > 0) {
             $n = 0;
+            //echo "<pre>";
             foreach ($terms as $term) {
                 $n++;
+                $privateTerm = get_term_meta($term->term_id, 'term_private', true);
+                if ($privateTerm == "1") {
+                    //var_dump($this->fileName);
+                    continue;
+                }
                 $termLink = get_term_link($term);
                 $this->tempLinks[] = $termLink; //All Links
                 $this->typeBasisData[] = $termLink;
                 $this->tempData[$term->term_id] = array($termLink, $term->name);
+
+                //var_dump($this->typeBasisData);
                 if (count($this->tempData) == $this->options['sitemap_max_links'] || $n == count($terms)) {
                     $file = $this->storeXml();
                     if ($file) {

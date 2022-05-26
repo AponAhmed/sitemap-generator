@@ -9,7 +9,7 @@
   Plugin URI: http://siatex.com/plugins/seo-search/
   Description: Generate XML Sitemap with Page, Post and custom Post also MPG
   Author: Apon
-  Version: 1.0
+  Version: 2.1
   Author URI:http://siatex.com/
  */
 
