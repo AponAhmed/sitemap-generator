@@ -467,7 +467,6 @@ class Generator {
                 }
             }
 
-
             foreach ($urleElements as $el => $val) {
                 $e = $doc->createElement($el);
                 $e->appendChild($doc->createTextNode($val));
@@ -488,6 +487,10 @@ class Generator {
                 return false;
             }
         } else {//This section for Main Sitemap Only
+            $totalInfo = $doc->createElement("total-urls");
+            $totalInfo->appendChild($doc->createTextNode(count($this->tempLinks)));
+            $urlSet->appendChild($totalInfo);
+
             $fileName = ABSPATH . $this->fileName;
             if ($doc->save($fileName . ".xml")) {
                 return true;

@@ -91,7 +91,8 @@
                             You can find more information about XML sitemaps on <a href="http://sitemaps.org">sitemaps.org</a>.
                         </p>
                         <p class="expl">
-                            This sitemap contains <xsl:value-of select="count(sitemap:sitemapindex/sitemap:sitemap)"/> URLs.
+                            This sitemap contains <xsl:value-of select="sitemap:sitemapindex/sitemap:total-urls" /> URLs in
+                            <xsl:value-of select="count(sitemap:sitemapindex/sitemap:sitemap)"/> sitemaps.
                         </p>
                     </div>		
                     <table id="sitemap" cellpadding="3">
