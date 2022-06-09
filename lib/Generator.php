@@ -563,7 +563,7 @@ class Generator {
         $xslt = $doc->createProcessingInstruction('xml-stylesheet', ' type="text/xsl" href="' . $stylePath . '"');
         $doc->appendChild($xslt);
 
-        //Creating Attributes
+        //Creating Attributes  
         foreach ($attArr as $key => $value) {
             $attr = $doc->createAttribute($key);
             $attr->value = $value;
@@ -572,6 +572,7 @@ class Generator {
         //Add Attributes
         $doc->appendChild($urlSet);
 
+        $html = "<ul>";
         foreach ($this->tempLinks as $link) {
             $url = $doc->createElement("url");
             $e = $doc->createElement('loc');
@@ -579,8 +580,11 @@ class Generator {
             $url->appendChild($e);
             //Final Append
             $urlSet->appendChild($url);
+            $html .= "<li><a href=\"$link\"><span class=\"title\">$link</span></a></li>";
         }
+        $html .= "</ul>";
         $doc->save(ABSPATH . $this->dirName . "/all.xml");
+        $this->generateHtmlFile($html, "all.html", false);
     }
 
     function getAllLinks() {
