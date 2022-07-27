@@ -188,6 +188,8 @@ class Generator {
         $projects = $wpdb->get_results("SELECT name,headers,source_type,source_path,original_file_url,template_id,urls_array,sitemap_filename,sitemap_max_url,sitemap_update_frequency From {$wpdb->prefix}" . MPG_Constant::MPG_PROJECTS_TABLE . " where $singleQry exclude_in_robots !=0");
         foreach ($projects as $project) {
             $pageTitle = get_the_title($project->template_id);
+
+            $modDate = get_the_date('', $project->template_id);
             //set File Name
 
             $this->fileName = strtolower($project->sitemap_filename);
@@ -210,9 +212,12 @@ class Generator {
                     //$pageTitle = $this->shortcodeFilter($project, $pageTitle, $linkSuffex);//Commented For Execution Time Issue
 
                     $link = $this->trimSlash($this->siteUrl . "/" . $linkSuffex);
+                    if (strpos($link, '.html') !== false) {
+                        $link = trim($link, "/");
+                    }
                     $this->typeBasisData[] = $link;
 
-                    $this->tempData[] = array($link, $pageTitle);
+                    $this->tempData[] = array($link, $pageTitle, $modDate);
 
                     $this->tempLinks[] = $link; //All Links
                     if (count($this->tempData) == $fileLimit || $n == $totalLinks) {
@@ -255,7 +260,8 @@ class Generator {
         $n = 0;
         $exception = false;
         if ($this->postType == "page") {//Exception For Home Page to Top
-            $this->tempData[$this->homeID] = array($this->siteUrl, get_the_title($this->homeID));
+            $modDate = get_the_date('', $this->homeID);
+            $this->tempData[$this->homeID] = array($this->siteUrl, get_the_title($this->homeID), $modDate);
             $this->typeBasisData[] = $this->siteUrl;
             $n = 1;
             $exception = true;
@@ -271,7 +277,8 @@ class Generator {
                 $this->tempLinks[] = $link; //All Links
                 $this->typeBasisData[] = $link;
 
-                $this->tempData[$post->ID] = array($link, $post->post_title);
+                $modDate = get_the_date('', $post->ID);
+                $this->tempData[$post->ID] = array($link, $post->post_title, $modDate);
                 $n++;
                 //check count 
                 //if count == max or end current post type
@@ -315,7 +322,11 @@ class Generator {
                 $termLink = get_term_link($term);
                 $this->tempLinks[] = $termLink; //All Links
                 $this->typeBasisData[] = $termLink;
-                $this->tempData[$term->term_id] = array($termLink, $term->name);
+                $modDate = get_term_meta($term->term_id, 'modified_at', true);
+                if (!empty($modDate)) {
+                    $modDate = date('Y-m-d H:i:s', $modDate);
+                }
+                $this->tempData[$term->term_id] = array($termLink, $term->name, $modDate);
 
                 //var_dump($this->typeBasisData);
                 if (count($this->tempData) == $this->options['sitemap_max_links'] || $n == count($terms)) {
@@ -445,8 +456,12 @@ class Generator {
 
             $depth = $this->getDepth($link);
             $depthIndex = "dpth$depth";
-            $defaultLastMod = empty($this->options['sitemap_last_modified']) ? date(DATE_ATOM) : date(DATE_ATOM, strtotime($this->options['sitemap_last_modified']));
 
+            $defaultLastMod = date(DATE_ATOM);
+            if (isset($info[2]) && !empty($info[2])) {
+                $defaultLastMod = date(DATE_ATOM, strtotime($info[2]));
+            }
+            $defaultLastMod = empty($this->options['sitemap_last_modified']) ? $defaultLastMod : date(DATE_ATOM, strtotime($this->options['sitemap_last_modified']));
             //Required Elements
             $urleElements = [
                 'loc' => $link,
@@ -487,10 +502,11 @@ class Generator {
                 return false;
             }
         } else {//This section for Main Sitemap Only
-            $totalInfo = $doc->createElement("total-urls");
-            $totalInfo->appendChild($doc->createTextNode(count($this->tempLinks)));
-            $urlSet->appendChild($totalInfo);
-
+            //$info = $doc->createElement("info");
+            //$totalInfo = $doc->createElement("total-urls");
+            //$totalInfo->appendChild($doc->createTextNode(count($this->tempLinks)));
+            //$info->appendChild($totalInfo);
+            //$doc->appendChild($info);
             $fileName = ABSPATH . $this->fileName;
             if ($doc->save($fileName . ".xml")) {
                 return true;
