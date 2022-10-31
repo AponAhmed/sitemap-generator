@@ -165,6 +165,7 @@ class Generator {
 
         //Final Sitemap or Main sitemap
         $this->fileName = "sitemap";
+
         $this->tempData = $this->generatedFiles;
         $this->generateXml(true);
 
@@ -268,6 +269,7 @@ class Generator {
         }
 
 
+
         if ($wpQuery->posts) {
             if ($exception) {
                 $wpQuery->post_count++; //Counter Up If page Type: cause Home Page Pushed in scope
@@ -295,6 +297,7 @@ class Generator {
             //If No Page Exist without Home Page
             if ($n > 0) {
                 $file = $this->storeXml();
+                $this->generatedFiles[] = array($file);
             }
         }
     }
@@ -589,14 +592,16 @@ class Generator {
         $doc->appendChild($urlSet);
 
         $html = "<ul>";
-        foreach ($this->tempLinks as $link) {
-            $url = $doc->createElement("url");
-            $e = $doc->createElement('loc');
-            $e->appendChild($doc->createTextNode($link));
-            $url->appendChild($e);
-            //Final Append
-            $urlSet->appendChild($url);
-            $html .= "<li><a href=\"$link\"><span class=\"title\">$link</span></a></li>";
+        if (is_array($this->tempLinks) && count($this->tempLinks)) {
+            foreach ($this->tempLinks as $link) {
+                $url = $doc->createElement("url");
+                $e = $doc->createElement('loc');
+                $e->appendChild($doc->createTextNode($link));
+                $url->appendChild($e);
+                //Final Append
+                $urlSet->appendChild($url);
+                $html .= "<li><a href=\"$link\"><span class=\"title\">$link</span></a></li>";
+            }
         }
         $html .= "</ul>";
         $doc->save(ABSPATH . $this->dirName . "/all.xml");
