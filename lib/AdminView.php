@@ -207,11 +207,15 @@ class AdminView {
         global $wp_post_types;
         //echo "<pre>";
         $publicPostTyps = array_filter($wp_post_types, function ($v, $k) {
-            if ($v->public === true && $k != 'attachment')
+            if ($v->public === true) //&& $k != 'attachment')
                 return $v;
         }, ARRAY_FILTER_USE_BOTH);
 
         $this->publicPostTypes = $publicPostTyps;
+
+        $blogType = new \stdClass();
+        $blogType->label = 'Blog';
+        $this->publicPostTypes['blog'] = $blogType;
 
         echo "<div class=\"wrap\">";
         $this->PageTitle();

@@ -249,14 +249,87 @@ class Generator {
                 $skipPost[] = $p->template_id;
             }
         }
-        $arg = array(
-            'post_type' => $this->postType,
-            'post_status' => 'publish',
-            'fields' => array('post_title', 'comment_status'),
-            'post__not_in' => $skipPost
-        );
+
+        if ($this->postType == 'attachment') {
+            $MediaCats = get_option('media_category_in_search');
+            $arg = array(
+                'post_type' => $this->postType,
+                'post_status' => 'inherit',
+                'posts_per_page' => -1,
+                'tax_query' => array(
+                    array(
+                        'taxonomy' => 'media-category',
+                        'field' => 'term_id',
+                        'terms' => $MediaCats,
+                    )
+                ),
+            );
+        } elseif ($this->postType == 'blog') {
+            $ids = get_option('blog_post_category');
+            if (!empty($ids)) {
+                $ids = explode(",", $ids);
+            }
+            if (is_array($ids)) {
+                $ids = array_unique(array_filter($ids, 'trim'));
+            }
+            $lmt = -1;
+            if (count($ids) == 0) {
+                $lmt = 0;
+            }
+            $arg = array(
+                'post_type' => 'post',
+                'post_status' => 'publish',
+                'posts_per_page' => $lmt,
+                'tax_query' => array(
+                    array(
+                        'taxonomy' => 'category',
+                        'field' => 'term_id',
+                        'terms' => $ids,
+                    )
+                ),
+            );
+        } else {
+            if ($this->postType == 'post') {
+                $ids = get_option('blog_post_category');
+                if (!empty($ids)) {
+                    $ids = explode(",", $ids);
+                }
+                if (is_array($ids)) {
+                    $ids = array_unique(array_filter($ids, 'trim'));
+                }
+                if (count($ids) > 0) {
+                    $argBlog = array(
+                        'post_type' => 'post',
+                        'post_status' => 'publish',
+                        'posts_per_page' => -1,
+                        'fields' => 'ids',
+                        'tax_query' => array(
+                            array(
+                                'taxonomy' => 'category',
+                                'field' => 'term_id',
+                                'terms' => $ids,
+                            )
+                        ),
+                    );
+                    $wpQBlog = new \WP_Query($argBlog);
+                    $skipPost = array_merge($wpQBlog->posts, $skipPost);
+                }
+            }
+
+            $arg = array(
+                'post_type' => $this->postType,
+                'post_status' => 'publish',
+                'posts_per_page' => -1,
+                'fields' => array('post_title', 'comment_status'),
+                'post__not_in' => $skipPost
+            );
+        }
         //#get all data 
         $wpQuery = new \WP_Query($arg);
+//        if ($this->postType == 'blog') {
+//            var_dump(count($wpQuery->posts));
+//            exit;
+//        }
 
         $n = 0;
         $exception = false;
@@ -276,7 +349,9 @@ class Generator {
             }
             foreach ($wpQuery->posts as $post) {
                 $link = get_permalink($post->ID);
-                $this->tempLinks[] = $link; //All Links
+                if ($this->postType != 'blog') {//Blog type Post Exclude from All links
+                    $this->tempLinks[] = $link; //All Links
+                }
                 $this->typeBasisData[] = $link;
 
                 $modDate = get_the_date('', $post->ID);
