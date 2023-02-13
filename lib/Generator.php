@@ -297,6 +297,9 @@ class Generator {
                 if (is_array($ids)) {
                     $ids = array_unique(array_filter($ids, 'trim'));
                 }
+                if (!is_array($ids)) {
+                    $ids = [];
+                }
                 if (count($ids) > 0) {
                     $argBlog = array(
                         'post_type' => 'post',
