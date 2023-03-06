@@ -271,6 +271,8 @@ class Generator {
             }
             if (is_array($ids)) {
                 $ids = array_unique(array_filter($ids, 'trim'));
+            }else{
+                $ids=[];
             }
             $lmt = -1;
             if (count($ids) == 0) {
