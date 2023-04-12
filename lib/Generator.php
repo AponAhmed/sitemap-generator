@@ -271,8 +271,8 @@ class Generator {
             }
             if (is_array($ids)) {
                 $ids = array_unique(array_filter($ids, 'trim'));
-            }else{
-                $ids=[];
+            } else {
+                $ids = [];
             }
             $lmt = -1;
             if (count($ids) == 0) {
@@ -428,6 +428,7 @@ class Generator {
      * @return string Generated File Name
      */
     public function storeXml($html = true) {
+        $this->dirName = '';
         $this->n++;
         //Generate XML data;
         //HTML sitemap data map
@@ -546,6 +547,11 @@ class Generator {
             }
             $defaultLastMod = empty($this->options['sitemap_last_modified']) ? $defaultLastMod : date(DATE_ATOM, strtotime($this->options['sitemap_last_modified']));
             //Required Elements
+            $timeStampMx = strtotime($defaultLastMod);
+            $timeStampMn = $timeStampMx - (15 * 24 * 60 * 60);
+            $pickedTime = random_int($timeStampMn, $timeStampMx);
+            $defaultLastMod = date(DATE_ATOM, $pickedTime);
+            //var_dump($defaultLastMod);
             $urleElements = [
                 'loc' => $link,
                 'lastmod' => $defaultLastMod,
@@ -556,6 +562,9 @@ class Generator {
                     if ($this->freqChange) {
                         $urleElements['changefreq'] = $this->freqChange;
                     } else {
+                        if ($depthIndex == 'dpth4' || $depthIndex == 'dpth5') {
+                            $depthIndex = "dpth3";
+                        }
                         $urleElements['changefreq'] = $this->options['sitemapFreqDpth'][$depthIndex];
                     }
                 }
@@ -570,7 +579,6 @@ class Generator {
                 $e->appendChild($doc->createTextNode($val));
                 $url->appendChild($e);
             }
-
             //Final Append
             $urlSet->appendChild($url);
         }
