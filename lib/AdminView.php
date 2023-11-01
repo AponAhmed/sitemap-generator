@@ -98,8 +98,8 @@ class AdminView {
                 <div class="option-wrap">
                     <label>Directory :</label>
                     <div class="input-wrap">
-                        <input type="text" value="<?php echo $this->getOption('sitemap_dir_name') ?>" placeholder="sitemaps" name="sitemap_options[sitemap_dir_name]">
-                        <p class="description">Directory name, Where XML file will store (in Root)</p>
+                        <input type="text" value="<?php echo $this->getOption('sitemap_dir_name') ?>" placeholder="root" name="sitemap_options[sitemap_dir_name]">
+                        <p class="description">Directory name,if empty then XML and html files will store in Root directory</p>
                     </div>
                 </div>
             </div>
