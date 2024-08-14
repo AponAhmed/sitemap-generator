@@ -102,6 +102,76 @@ class Admin {
             $this->options['taxonomies'] = array_unique($taxx);
         }
     }
+    
+    public static function allLinks() {
+        $optionsStr = get_option('sitemap_options');
+        $options = ['sitemap_dir_name' => ""];
+        
+        if ($optionsStr) {
+            $options = json_decode($optionsStr, true);
+        }
+        
+        $linkFile = ABSPATH . "/all.xml";
+        if (!empty($options['sitemap_dir_name'])) {
+            $linkFile = ABSPATH . "/$options[sitemap_dir_name]/all.xml";
+        }
+        
+        if (file_exists($linkFile)) {
+            $xmlData = simplexml_load_file($linkFile);
+            if ($xmlData === false) {
+                // Handle XML loading errors
+                return ['error' => 'Failed to load XML'];
+            }
+            
+            // Convert SimpleXMLElement to array
+            $json = json_encode($xmlData);
+            $array = json_decode($json, true);
+            
+    
+            // Check if 'url' is an array and has elements
+            if (isset($array['url']) && is_array($array['url'])) {
+                $links = array_map(function ($obj) {
+                    // Check if 'loc' exists in each object
+                    if (isset($obj['loc'])) {
+                        return $obj['loc'];
+                    }
+                    return ''; // Return an empty string if 'loc' is not set
+                }, $array['url']);
+                return $links;
+            } else {
+                // Log the unexpected structure
+                error_log('Unexpected array structure: ' . print_r($array, true));
+            }
+        }
+        return [];
+    }
+
+
+
+    public static function allLinks_() {
+        $optionsStr = get_option('sitemap_options');
+        $options = ['sitemap_dir_name' => ""];
+        if ($optionsStr) {
+            $options = json_decode($optionsStr, true);
+        }
+        $linkFile = ABSPATH . "/all.xml";
+        if (!empty($options['sitemap_dir_name'])) {
+            $linkFile = ABSPATH . "/$options[sitemap_dir_name]/all.xml";
+        }
+        if (file_exists($linkFile)) {
+            $xmlData = simplexml_load_file($linkFile);
+            $json = json_encode($xmlData);
+            $array = json_decode($json, TRUE);
+            if (count($array['url'])) {
+                $links = array_map(function ($obj) {
+                    return $obj['loc'];
+                }, $array['url']);
+                return $links;
+            }
+            return [];
+        }
+        return [];
+    }
 
     /**
      * Update Sitemap Option By Ajax
