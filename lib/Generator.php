@@ -117,13 +117,11 @@ class Generator {
         }
         $this->fileName = $fileName;
         //Directory Name
-        $this->dirName = "";
         if (!empty($this->options['sitemap_dir_name'])) {
             $this->dirName = trim($this->options['sitemap_dir_name']);
+        } else {
+            $this->dirName = "sitemaps";
         }
-//        else {
-//            $this->dirName = "sitemaps";
-//        }
         //Making of Folder where store xml files
         if (!is_dir(ABSPATH . $this->dirName)) {
             mkdir(ABSPATH . $this->dirName, 0777, true);
@@ -430,7 +428,7 @@ class Generator {
      * @return string Generated File Name
      */
     public function storeXml($html = true) {
-        //$this->dirName = '';
+        $this->dirName = '';
         $this->n++;
         //Generate XML data;
         //HTML sitemap data map
@@ -634,9 +632,6 @@ class Generator {
         //Add Attributes
         $doc->appendChild($urlSet);
 
-        echo "<pre>";
-        echo $this->postType . "-" . count($this->typeBasisData) . "\n";
-
         foreach ($this->typeBasisData as $link) {
             $url = $doc->createElement("url");
             $e = $doc->createElement('loc');
@@ -645,16 +640,9 @@ class Generator {
             //Final Append
             $urlSet->appendChild($url);
         }
-
-        if (!empty($this->options['sitemap_dir_name'])) {
-            $this->typeDirIn = trim($this->options['sitemap_dir_name']);
-        } else {
-            $this->typeDirIn = "sitemaps";
-        }
-
-        $typeDir = ABSPATH . $this->typeDirIn . "/type/";
+        $typeDir = ABSPATH . $this->dirName . "/type/";
         if (!is_dir($typeDir)) {
-            mkdir($typeDir, 0777, true);
+            mkdir($typeDir, 0777);
             chmod($typeDir, 0777);
             file_put_contents($typeDir . "index.php", "<?php //Silence is golden");
         }
