@@ -9,7 +9,8 @@ use MPG_Constant;
  *
  * @author apon
  */
-class Generator {
+class Generator
+{
 
     /**
      * Current Progress is Post or Taxonomy
@@ -70,8 +71,11 @@ class Generator {
      */
     public array $typeBasisData;
     public string $currentType;
+    private  $usedLinks;
+    public $typeDirIn;
 
-    public function __construct($options) {
+    public function __construct($options)
+    {
         $this->options = $options;
         $this->homeID = get_option('page_on_front');
         $this->siteUrl = get_site_url();
@@ -83,7 +87,8 @@ class Generator {
      * @param string $type
      * @param string $typeName
      */
-    public function setTypes($type = "post", $typeName = "post") {
+    public function setTypes($type = "post", $typeName = "post")
+    {
         //Assign Post or Taxonomy Information
         //File Counter reset 
         $this->fileCount = 0;
@@ -98,7 +103,8 @@ class Generator {
     /**
      * File name and folder handler
      */
-    function setDirFileName() {
+    function setDirFileName()
+    {
         //sitemap_file_page
         //sitemap_file_test_taxonomy
         $fileName = "demo-name";
@@ -117,11 +123,13 @@ class Generator {
         }
         $this->fileName = $fileName;
         //Directory Name
+        $this->dirName = "";
         if (!empty($this->options['sitemap_dir_name'])) {
             $this->dirName = trim($this->options['sitemap_dir_name']);
-        } else {
-            $this->dirName = "sitemaps";
         }
+        //        else {
+        //            $this->dirName = "sitemaps";
+        //        }
         //Making of Folder where store xml files
         if (!is_dir(ABSPATH . $this->dirName)) {
             mkdir(ABSPATH . $this->dirName, 0777, true);
@@ -134,7 +142,9 @@ class Generator {
     /**
      * Main Entry Point before Generate
      */
-    public function run() {
+    public function run()
+    {
+        $this->usedLinks = [];
         //echo "<pre>";
         //var_dump($this->options);
         //return;
@@ -177,7 +187,8 @@ class Generator {
     /**
      * MPG Multi page Generate Sitemap
      */
-    function MPGenerate($id = false) {
+    function MPGenerate($id = false)
+    {
         global $wpdb;
         $singleQry = "";
         if ($id) {
@@ -216,8 +227,12 @@ class Generator {
                     if (strpos($link, '.html') !== false) {
                         $link = trim($link, "/");
                     }
-                    $this->typeBasisData[] = $link;
+                    if ($this->isUsed($link)) {
+                        echo "Skiped:$link\n";
+                        continue;
+                    }
 
+                    $this->typeBasisData[] = $link;
                     $this->tempData[] = array($link, $pageTitle, $modDate);
 
                     $this->tempLinks[] = $link; //All Links
@@ -237,7 +252,8 @@ class Generator {
     /**
      * Distribute Posts for each sitemap file and file number handle
      */
-    public function distributePost() {
+    public function distributePost()
+    {
         global $wpdb;
         $this->setDirFileName();
 
@@ -331,14 +347,14 @@ class Generator {
         }
         //#get all data 
         $wpQuery = new \WP_Query($arg);
-//        if ($this->postType == 'blog') {
-//            var_dump(count($wpQuery->posts));
-//            exit;
-//        }
+        //        if ($this->postType == 'blog') {
+        //            var_dump(count($wpQuery->posts));
+        //            exit;
+        //        }
 
         $n = 0;
         $exception = false;
-        if ($this->postType == "page") {//Exception For Home Page to Top
+        if ($this->postType == "page") { //Exception For Home Page to Top
             $modDate = get_the_date('', $this->homeID);
             $this->tempData[$this->homeID] = array($this->siteUrl, get_the_title($this->homeID), $modDate);
             $this->typeBasisData[] = $this->siteUrl;
@@ -354,10 +370,17 @@ class Generator {
             }
             foreach ($wpQuery->posts as $post) {
                 $link = get_permalink($post->ID);
-                if ($this->postType != 'blog') {//Blog type Post Exclude from All links
+                if ($this->postType != 'blog') { //Blog type Post Exclude from All links
                     $this->tempLinks[] = $link; //All Links
                 }
+
+                if ($this->isUsed($link)) {
+                    echo "Skiped:$link\n";
+                    continue;
+                }
+
                 $this->typeBasisData[] = $link;
+
 
                 $modDate = get_the_date('', $post->ID);
                 $this->tempData[$post->ID] = array($link, $post->post_title, $modDate);
@@ -371,8 +394,8 @@ class Generator {
                         $this->generatedFiles[] = array($file);
                         $this->fileCount++;
                     }
-                }//Count Logic
-            }//Foreach Loop
+                } //Count Logic
+            } //Foreach Loop
         } else {
             //If No Page Exist without Home Page
             if ($n > 0) {
@@ -382,27 +405,49 @@ class Generator {
         }
     }
 
+    private function isUsed($link)
+    {
+        return in_array($link, $this->usedLinks);
+    }
+
     /**
      * Distribute Taxo Links
      */
-    function distributeTaxo() {
+    function distributeTaxo()
+    {
         $this->setDirFileName();
         $terms = get_terms(array(
             'taxonomy' => $this->taxType,
             'hide_empty' => false,
         ));
 
+        $publicTerms = [];
+        foreach ($terms as $term) {
+            $privateTerm = get_term_meta($term->term_id, 'term_private', true);
+            if ($privateTerm == "1") {
+                //var_dump($this->fileName);
+                continue;
+            }
+            $publicTerms[] = $term;
+        }
+
+        $terms = $publicTerms;
+
         if (count($terms) > 0) {
             $n = 0;
             //echo "<pre>";
             foreach ($terms as $term) {
                 $n++;
-                $privateTerm = get_term_meta($term->term_id, 'term_private', true);
-                if ($privateTerm == "1") {
-                    //var_dump($this->fileName);
+                //                $privateTerm = get_term_meta($term->term_id, 'term_private', true);
+                //                if ($privateTerm == "1") {
+                //                    //var_dump($this->fileName);
+                //                    continue;
+                //                }
+                $termLink = get_term_link($term);
+                if ($this->isUsed($termLink)) {
+                    echo "Skiped:$termLink\n";
                     continue;
                 }
-                $termLink = get_term_link($term);
                 $this->tempLinks[] = $termLink; //All Links
                 $this->typeBasisData[] = $termLink;
                 $modDate = get_term_meta($term->term_id, 'modified_at', true);
@@ -417,9 +462,9 @@ class Generator {
                     if ($file) {
                         $this->generatedFiles[] = array($file);
                         $this->fileCount++;
-                    }//if File Created
-                }//Logic of max Links in one file
-            }//Term Loop
+                    } //if File Created
+                } //Logic of max Links in one file
+            } //Term Loop
         }
     }
 
@@ -427,8 +472,9 @@ class Generator {
      * Generate File and Store in Dir
      * @return string Generated File Name
      */
-    public function storeXml($html = true) {
-        $this->dirName = '';
+    public function storeXml($html = true)
+    {
+        //$this->dirName = '';
         $this->n++;
         //Generate XML data;
         //HTML sitemap data map
@@ -445,7 +491,7 @@ class Generator {
                 $furl = $this->siteUrl . "/sitemap.html";
             }
             $this->HtmlSidebar[$this->n] = "<li><a href=\"$furl\">{$this->fileName}$indx</a></li>";
-        }//Html  
+        } //Html  
 
         $fileName = $this->generateXml();
         if ($fileName) {
@@ -457,7 +503,8 @@ class Generator {
     /**
      * Html Sitemap Generate 
      */
-    function handleHtmlGenerate() {
+    function handleHtmlGenerate()
+    {
         $sidebarHtml = implode("\n", $this->HtmlSidebar); //Html Of Sidebar
 
         if ($this->dataMap) {
@@ -485,7 +532,8 @@ class Generator {
         }
     }
 
-    public function generateXml($main = false) {
+    public function generateXml($main = false)
+    {
         $doc = new \DOMDocument('1.0', "UTF-8");
         $doc->formatOutput = true;
 
@@ -592,7 +640,7 @@ class Generator {
             } else {
                 return false;
             }
-        } else {//This section for Main Sitemap Only
+        } else { //This section for Main Sitemap Only
             //$info = $doc->createElement("info");
             //$totalInfo = $doc->createElement("total-urls");
             //$totalInfo->appendChild($doc->createTextNode(count($this->tempLinks)));
@@ -606,7 +654,8 @@ class Generator {
         return false;
     }
 
-    function TypeBasisStore() {
+    function TypeBasisStore()
+    {
         //var_dump($this->postType, $this->typeBasisData);
         //var_dump($this->typeBasisData);
         $doc = new \DOMDocument('1.0', "UTF-8");
@@ -632,6 +681,9 @@ class Generator {
         //Add Attributes
         $doc->appendChild($urlSet);
 
+        // echo "<pre>";
+        //echo $this->postType . "-" . count($this->typeBasisData) . "\n";
+
         foreach ($this->typeBasisData as $link) {
             $url = $doc->createElement("url");
             $e = $doc->createElement('loc');
@@ -640,9 +692,16 @@ class Generator {
             //Final Append
             $urlSet->appendChild($url);
         }
-        $typeDir = ABSPATH . $this->dirName . "/type/";
+
+        if (!empty($this->options['sitemap_dir_name'])) {
+            $this->typeDirIn = trim($this->options['sitemap_dir_name']);
+        } else {
+            $this->typeDirIn = "sitemaps";
+        }
+
+        $typeDir = ABSPATH . $this->typeDirIn . "/type/";
         if (!is_dir($typeDir)) {
-            mkdir($typeDir, 0777);
+            mkdir($typeDir, 0777, true);
             chmod($typeDir, 0777);
             file_put_contents($typeDir . "index.php", "<?php //Silence is golden");
         }
@@ -654,7 +713,8 @@ class Generator {
         $doc->save($typeDir . "/$FName.xml");
     }
 
-    function allinOneGenerate() {
+    function allinOneGenerate()
+    {
         $doc = new \DOMDocument('1.0', "UTF-8");
         $doc->formatOutput = true;
         $urlSet = $doc->createElement("urlset");
@@ -696,7 +756,8 @@ class Generator {
         $this->generateHtmlFile($html, "all.html", false);
     }
 
-    function getAllLinks() {
+    function getAllLinks()
+    {
         $xmlFile = ABSPATH . $this->dirName . "/all.xml";
         if (file_exists($xmlFile)) {
             $xmlContent = file_get_contents($xmlFile);
@@ -707,7 +768,8 @@ class Generator {
         return false;
     }
 
-    function generateHtmlFile($PageItemHtml = "", $fileName = "sitemap", $sidebar = "") {
+    function generateHtmlFile($PageItemHtml = "", $fileName = "sitemap", $sidebar = "")
+    {
         //print_r($doc);exit;
         //===============HTML==================
         $siteName = get_bloginfo();
@@ -803,10 +865,11 @@ body, head, #xsg {margin:0px 0px 0px 0px; line-height:22px; color:#666666; width
 
     /**
      * REmove Double Slash from URL
-     * @param type $url
-     * @return type
+     * @param String $url
+     * @return String
      */
-    function trimSlash($url) {
+    function trimSlash($url)
+    {
         return preg_replace('/([^:])(\/{2,})/', '$1/', $url);
     }
 
@@ -815,7 +878,8 @@ body, head, #xsg {margin:0px 0px 0px 0px; line-height:22px; color:#666666; width
      * @param String $url
      * @return int 
      */
-    function getDepth($url) {
+    function getDepth($url)
+    {
         $RQURI = str_replace($this->siteUrl, "", $url);
         $parts = explode("/", $RQURI);
         $parts = array_unique(array_filter(array_map('trim', $parts)));
@@ -828,7 +892,8 @@ body, head, #xsg {margin:0px 0px 0px 0px; line-height:22px; color:#666666; width
      * @param string $str String, What convert
      * @param string $link Suffix
      */
-    function shortcodeFilter($project, $str, $suffix) {
+    function shortcodeFilter($project, $str, $suffix)
+    {
         //var_dump($project, $str);
         $filePath = $project->source_path;
         if ($project->source_type == "direct_link") {
@@ -875,5 +940,4 @@ body, head, #xsg {margin:0px 0px 0px 0px; line-height:22px; color:#666666; width
         //var_dump($data, $suffix, $str);
         return $str;
     }
-
 }
